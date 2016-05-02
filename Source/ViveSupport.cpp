@@ -13,17 +13,25 @@ http://Alexander.SannyBuilder.com
 #include "common\plugin.h"
 #include <math.h>
 #include <openvr.h>
+#include <string>
 //#include <openvr_capi.h>
 //#include <openvr_driver.h>
 
 #define CONFIG_FILE "horsespawner.ini" //using default names from template
 #define SCR_NAME "Horse spawner"
 
-void InitHMD(vr::IVRSystem* hmd)
-{
-	vr::EVRInitError eError = vr::VRInitError_None;
-	hmd = vr::VR_Init(&eError, vr::VRApplication_Other);
+//Globals
 
+
+
+
+vr::IVRSystem* InitHMD()
+{
+	
+	
+	vr::EVRInitError eError = vr::VRInitError_None;
+	vr::IVRSystem* hmd = vr::VR_Init(&eError, vr::VRApplication_Other);
+	
 	if (eError != vr::VRInitError_None)
 	{
 		PrintNote("Error: %s", eError);
@@ -41,8 +49,8 @@ void InitHMD(vr::IVRSystem* hmd)
 	{
 		PrintNote("HMD pointer set");
 	}
-
 	
+	return hmd;
 
 }
 void CheckTrackedDevices(vr::IVRSystem* hmd)
@@ -76,19 +84,34 @@ void CheckTrackedDevices(vr::IVRSystem* hmd)
 	}
 
 }
+std::string GetTrackedDeviceString(vr::IVRSystem *pHmd, vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL)
+{
+	uint32_t unRequiredBufferLen = pHmd->GetStringTrackedDeviceProperty(unDevice, prop, NULL, 0, peError);
+	if (unRequiredBufferLen == 0)
+		return "";
+
+	char *pchBuffer = new char[unRequiredBufferLen];
+	unRequiredBufferLen = pHmd->GetStringTrackedDeviceProperty(unDevice, prop, pchBuffer, unRequiredBufferLen, peError);
+	std::string sResult = pchBuffer;
+	delete[] pchBuffer;
+	return sResult;
+}
+
 void main()
 {
 	BYTE key = IniReadInt(CONFIG_FILE, "main", "key", 0);
 	PrintNote("[%s] not started, press '%s' to use", SCR_NAME, GetKeyName(key).c_str());
 	
-	vr::IVRSystem* hmd;
-	InitHMD(hmd);	
-
-	//vr::TrackedDeviceClass right_controller;
-	//vr::TrackedDeviceIndex_t right_controller = hmd->GetTrackedDeviceIndexForControllerRole(vr::TrackedControllerRole_RightHand);
-	//vr::TrackedDeviceIndex_t left_controller = hmd->GetTrackedDeviceIndexForControllerRole(vr::TrackedControllerRole_LeftHand);
 	
-	vr::VRControllerState_t right_state;
+	vr::IVRSystem *hmd = NULL;
+	hmd = InitHMD();	
+
+	
+	std::string driver_string = "No Display";
+	driver_string = GetTrackedDeviceString(hmd, vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String);
+	PrintNote("HMD: %s", driver_string.c_str());
+
+	
 
 	while (TRUE)
 	{
@@ -103,6 +126,14 @@ void main()
 			else
 			{
 				PrintNote("Funciton working f");
+			}
+			if (hmd == NULL)
+			{
+				PrintNote("Head set is null");
+			}
+			else
+			{
+				PrintNote("Headset pointer set %s", hmd);
 			}
 		}	
 

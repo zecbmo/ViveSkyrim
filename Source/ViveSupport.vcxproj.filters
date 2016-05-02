@@ -5,6 +5,7 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="ViveSupport.cpp" />
+    <ClCompile Include="Controller.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="common">
@@ -30,6 +31,7 @@
     <ClInclude Include="common\types.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="Controller.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="common\plugin.def">

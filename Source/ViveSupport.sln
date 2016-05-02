@@ -7,9 +7,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ViveSupport", "ViveSupport.
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		main|x64 = main|x64
 		main|x86 = main|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3BFBFF9E-E415-447A-BE0C-3F144F5FA2B7}.main|x64.ActiveCfg = main|x64
+		{3BFBFF9E-E415-447A-BE0C-3F144F5FA2B7}.main|x64.Build.0 = main|x64
 		{3BFBFF9E-E415-447A-BE0C-3F144F5FA2B7}.main|x86.ActiveCfg = main|Win32
 		{3BFBFF9E-E415-447A-BE0C-3F144F5FA2B7}.main|x86.Build.0 = main|Win32
 	EndGlobalSection
