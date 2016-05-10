@@ -5,7 +5,7 @@ THIS FILE IS A PART OF THE SKYRIM DRAGON SCRIPT PROJECT
 (C) Alexander Blade 2011
 http://Alexander.SannyBuilder.com
 */
-
+#define NOMINMAX
 #include "common\skyscript.h"
 #include "common\obscript.h"
 #include "common\types.h"
@@ -14,6 +14,8 @@ http://Alexander.SannyBuilder.com
 #include <math.h>
 #include <openvr.h>
 #include <string>
+#include "Device.h"
+#include "Controller.h"
 //#include <openvr_capi.h>
 //#include <openvr_driver.h>
 
@@ -25,13 +27,141 @@ http://Alexander.SannyBuilder.com
 
 
 
+vr::IVRSystem* InitHMD();
+void CheckTrackedDevices(vr::IVRSystem* hmd);
+void Debug_ControllerInput(vr::IVRSystem* vr_system, Controller &right_controller, Controller &left_controller, Device &hmd, BYTE key);
+
+
+void main()
+{
+	//Home key set up
+	BYTE key = IniReadInt(CONFIG_FILE, "main", "key", 0);
+		
+	//hmf initialisation
+	vr::IVRSystem *vr_system = NULL;
+	vr_system = InitHMD();
+
+	//Variables needed
+	int framecount = 0;
+
+	//controller init
+	//Get the controller ID's from tracking system (vive)
+	u_int right_controller_id = (u_int)vr_system->GetTrackedDeviceIndexForControllerRole(vr::TrackedControllerRole_RightHand);
+	u_int left_controller_id = (u_int)vr_system->GetTrackedDeviceIndexForControllerRole(vr::TrackedControllerRole_LeftHand);
+	PrintNote("Left Controller is: %d", left_controller_id);
+	PrintNote("Right Controller is: %d", right_controller_id);	
+	//Set up our controller class based on the IDs returned
+	Controller right_controller, left_controller;
+	Device hmd;
+
+	CActor* player = Game::GetPlayer();
+
+	right_controller.SetUp(right_controller_id, &framecount, player, vr_system);
+	left_controller.SetUp(left_controller_id, &framecount, player, vr_system);
+	hmd.SetUp(0, &framecount, player, vr_system);
+
+	while (TRUE)
+	{
+		hmd.Update();
+		right_controller.UpdateHandPosition(&hmd);
+		left_controller.UpdateHandPosition(&hmd);
+
+		Debug_ControllerInput(vr_system, right_controller, left_controller, hmd, key);
+
+		
+
+
+
+		framecount++;
+		Wait(0); // In order to switch between script threads Wait() must be called anyway		
+	}
+
+	vr::VR_Shutdown();
+}
+
+
+
+void Debug_ControllerInput(vr::IVRSystem* vr_system, Controller &right_controller, Controller &left_controller, Device& hmd, BYTE key )
+{
+	if (GetKeyPressed(key))
+	{
+		//CheckTrackedDevices(hmd);
+		bool temp = vr_system->IsInputFocusCapturedByAnotherProcess();
+		if (temp == true)
+		{
+			PrintNote("Funciton working t");
+		}
+		else
+		{
+			PrintNote("Funciton working f");
+		}
+		if (vr_system == NULL)
+		{
+			PrintNote("Head set is null");
+		}
+		else
+		{
+			PrintNote("Headset pointer set %s", vr_system);
+		}
+		
+
+	}
+
+	if (right_controller.GetPressDown(vr::k_EButton_SteamVR_Trigger))
+	{
+		//PrintNote("Right Trigger Pressed");
+		PrintNote("Player Pos: x = %.2f, y = %.2f, z = %.2f.  Offest: x = %.2f, y = %.2f, z = %.2f" , right_controller.body_pos.x, right_controller.body_pos.y, right_controller.body_pos.z, right_controller.offset.x, right_controller.offset.y, right_controller.offset.z);
+		PrintNote("in_game_pos: x = %.2f, y = %.2f, z = %.2f", right_controller.in_game_pos.x, right_controller.in_game_pos.y, right_controller.in_game_pos.z);
+		PrintNote("HMD: x = %.2f, y = %.2f, z = %.2f", hmd.GetTransform().pos.x, hmd.GetTransform().pos.y, hmd.GetTransform().pos.z);
+		PrintNote("Right Controller: x = %.2f, y = %.2f, z = %.2f", right_controller.GetTransform().pos.x, right_controller.GetTransform().pos.y, right_controller.GetTransform().pos.z);
+
+
+	}
+
+	if (right_controller.GetPressDown(vr::k_EButton_SteamVR_Touchpad))
+	{
+		PrintNote("Right Touchpad Pressed");
+	}
+
+	if (right_controller.GetPressDown(vr::k_EButton_ApplicationMenu))
+	{
+		PrintNote("Right Menu Pressed");
+	}
+
+	if (right_controller.GetPressDown(vr::k_EButton_Grip))
+	{
+		PrintNote("Right Grip Pressed");
+	}
+
+	if (left_controller.GetPressDown(vr::k_EButton_SteamVR_Trigger))
+	{
+		PrintNote("Left Trigger Pressed");
+	}
+
+	if (left_controller.GetPressDown(vr::k_EButton_SteamVR_Touchpad))
+	{
+		PrintNote("Left Touchpad Pressed");
+	}
+
+	if (left_controller.GetPressDown(vr::k_EButton_ApplicationMenu))
+	{
+		PrintNote("Left Menu Pressed");
+	}
+
+	if (left_controller.GetPressDown(vr::k_EButton_Grip))
+	{
+		PrintNote("Left Grip Pressed");
+	}
+
+
+}
 vr::IVRSystem* InitHMD()
 {
-	
-	
+
+
 	vr::EVRInitError eError = vr::VRInitError_None;
 	vr::IVRSystem* hmd = vr::VR_Init(&eError, vr::VRApplication_Other);
-	
+
 	if (eError != vr::VRInitError_None)
 	{
 		PrintNote("Error: %s", eError);
@@ -49,7 +179,7 @@ vr::IVRSystem* InitHMD()
 	{
 		PrintNote("HMD pointer set");
 	}
-	
+
 	return hmd;
 
 }
@@ -84,62 +214,3 @@ void CheckTrackedDevices(vr::IVRSystem* hmd)
 	}
 
 }
-std::string GetTrackedDeviceString(vr::IVRSystem *pHmd, vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL)
-{
-	uint32_t unRequiredBufferLen = pHmd->GetStringTrackedDeviceProperty(unDevice, prop, NULL, 0, peError);
-	if (unRequiredBufferLen == 0)
-		return "";
-
-	char *pchBuffer = new char[unRequiredBufferLen];
-	unRequiredBufferLen = pHmd->GetStringTrackedDeviceProperty(unDevice, prop, pchBuffer, unRequiredBufferLen, peError);
-	std::string sResult = pchBuffer;
-	delete[] pchBuffer;
-	return sResult;
-}
-
-void main()
-{
-	BYTE key = IniReadInt(CONFIG_FILE, "main", "key", 0);
-	PrintNote("[%s] not started, press '%s' to use", SCR_NAME, GetKeyName(key).c_str());
-	
-	
-	vr::IVRSystem *hmd = NULL;
-	hmd = InitHMD();	
-
-	
-	std::string driver_string = "No Display";
-	driver_string = GetTrackedDeviceString(hmd, vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String);
-	PrintNote("HMD: %s", driver_string.c_str());
-
-	
-
-	while (TRUE)
-	{
-		if (GetKeyPressed(key))
-		{
-			//CheckTrackedDevices(hmd);
-			bool temp = hmd->IsInputFocusCapturedByAnotherProcess();
-			if (temp == true)
-			{
-				PrintNote("Funciton working t");
-			}
-			else
-			{
-				PrintNote("Funciton working f");
-			}
-			if (hmd == NULL)
-			{
-				PrintNote("Head set is null");
-			}
-			else
-			{
-				PrintNote("Headset pointer set %s", hmd);
-			}
-		}	
-
-		Wait(0); // In order to switch between script threads Wait() must be called anyway		
-	}
-
-	vr::VR_Shutdown();
-}
-

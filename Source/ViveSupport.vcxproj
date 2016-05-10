@@ -128,6 +128,7 @@ copy "$(OutDir)$(TargetName)$(TargetExt)" "..\bin"</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="common\plugin.cpp" />
+    <ClCompile Include="Device.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="ViveSupport.cpp" />
   </ItemGroup>
@@ -138,7 +139,9 @@ copy "$(OutDir)$(TargetName)$(TargetExt)" "..\bin"</Command>
     <ClInclude Include="common\plugin.h" />
     <ClInclude Include="common\skyscript.h" />
     <ClInclude Include="common\types.h" />
+    <ClInclude Include="Device.h" />
     <ClInclude Include="Controller.h" />
+    <ClInclude Include="RigidTransform.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="common\plugin.def" />

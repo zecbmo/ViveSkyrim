@@ -1,64 +1,27 @@
 #pragma once
 
-#include "openvr.h"
-#include "Vectors.h"
-#include <algorithm> 
-typedef unsigned long ulong;
-typedef unsigned int uint;
+#include "Device.h"
+
+#define DEFAULT_GLOVE (0x000B145B) //mythic dawn gloves 
 
 
-struct ButtonMask
-{
-	const ulong System = (1ul << (int)vr::k_EButton_System); // reserved
-	const ulong ApplicationMenu = (1ul << (int)vr::k_EButton_ApplicationMenu);
-	const ulong Grip = (1ul << (int)vr::k_EButton_Grip);
-	const ulong Axis0 = (1ul << (int)vr::k_EButton_Axis0);
-	const ulong Axis1 = (1ul << (int)vr::k_EButton_Axis1);
-	const ulong Axis2 = (1ul << (int)vr::k_EButton_Axis2);
-	const ulong Axis3 = (1ul << (int)vr::k_EButton_Axis3);
-	const ulong Axis4 = (1ul << (int)vr::k_EButton_Axis4);
-	const ulong Touchpad = (1ul << (int)vr::k_EButton_SteamVR_Touchpad);
-	const ulong Trigger = (1ul << (int)vr::k_EButton_SteamVR_Trigger);
-};
 
-class Controller
+class Controller : public Device
 {
 public:
 	Controller();
-	~Controller();
-	inline void ControllerSetUp(uint index, int* framecount, vr::IVRSystem* hmd) { index_ = index; hmd_ = hmd; framecount_ = framecount; };
+	~Controller() {};
 	void Update();
-	
+	inline void SetUp(u_int index, int* framecount, CActor* player, vr::IVRSystem* hmd);
 
-	
+	//controller input
+	bool GetPress(vr::EVRButtonId buttonId) { Update(); return (state_.ulButtonPressed& vr::ButtonMaskFromId(buttonId)) != 0; }
+	bool GetPressDown(vr::EVRButtonId buttonId) { Update(); return (state_.ulButtonPressed& vr::ButtonMaskFromId(buttonId)) != 0 && (prev_state_.ulButtonPressed & vr::ButtonMaskFromId(buttonId)) == 0; }
+	bool GetPressUp(vr::EVRButtonId buttonId) { Update(); return (state_.ulButtonPressed& vr::ButtonMaskFromId(buttonId)) == 0 && (prev_state_.ulButtonPressed & vr::ButtonMaskFromId(buttonId)) != 0; }
 
-	/// These values are only accurate for the last controller state change (e.g. trigger release), and by definition, will always lag behind
-	// the predicted visual poses that drive SteamVR_TrackedObjects since they are sync'd to the input timestamp that caused them to update.
-	 //SteamVR_Utils.RigidTransform transform{ get{ Update(); return new SteamVR_Utils.RigidTransform(pose.mDeviceToAbsoluteTracking); } }
-	// Vector3 velocity{ get{ Update(); return new Vector3(pose.vVelocity.v0, pose.vVelocity.v1, -pose.vVelocity.v2); } }
-	// Vector3 angularVelocity{ get{ Update(); return new Vector3(-pose.vAngularVelocity.v0, -pose.vAngularVelocity.v1, pose.vAngularVelocity.v2); } }
-
-	// VRControllerState_t GetState() { Update(); return state; }
-	 //VRControllerState_t GetPrevState() { Update(); return prevState; }
-	 //TrackedDevicePose_t GetPose() { Update(); return pose; }
-
-	//Controller Input
-	bool GetPress(ulong buttonMask) { Update(); return (state_.ulButtonPressed & buttonMask) != 0; }
-	bool GetPressDown(ulong buttonMask) { Update(); return (state_.ulButtonPressed & buttonMask) != 0 && (prev_state_.ulButtonPressed & buttonMask) == 0; }
-	bool GetPressUp(ulong buttonMask) { Update(); return (state_.ulButtonPressed & buttonMask) == 0 && (prev_state_.ulButtonPressed & buttonMask) != 0; }
-
-	bool GetPress(vr::EVRButtonId buttonId) { return GetPress(1ul << (int)buttonId); }
-	bool GetPressDown(vr::EVRButtonId buttonId) { return GetPressDown(1ul << (int)buttonId); }
-	bool GetPressUp(vr::EVRButtonId buttonId) { return GetPressUp(1ul << (int)buttonId); }
-
-	bool GetTouch(ulong buttonMask) { Update(); return (state_.ulButtonTouched & buttonMask) != 0; }
-	bool GetTouchDown(ulong buttonMask) { Update(); return (state_.ulButtonTouched & buttonMask) != 0 && (prev_state_.ulButtonTouched & buttonMask) == 0; }
-	bool GetTouchUp(ulong buttonMask) { Update(); return (state_.ulButtonTouched & buttonMask) == 0 && (prev_state_.ulButtonTouched & buttonMask) != 0; }
-
-	bool GetTouch(vr::EVRButtonId buttonId) { return GetTouch(1ul << (int)buttonId); }
-	bool GetTouchDown(vr::EVRButtonId buttonId) { return GetTouchDown(1ul << (int)buttonId); }
-	bool GetTouchUp(vr::EVRButtonId buttonId) { return GetTouchUp(1ul << (int)buttonId); }
-
+	bool GetTouch(vr::EVRButtonId buttonId) { Update(); return (state_.ulButtonTouched& vr::ButtonMaskFromId(buttonId)) != 0; }
+	bool GetTouchDown(vr::EVRButtonId buttonId) { Update(); return (state_.ulButtonTouched& vr::ButtonMaskFromId(buttonId)) != 0 && (prev_state_.ulButtonTouched & vr::ButtonMaskFromId(buttonId)) == 0; }
+	bool GetTouchUp(vr::EVRButtonId buttonId) { Update(); return (state_.ulButtonTouched& vr::ButtonMaskFromId(buttonId)) == 0 && (prev_state_.ulButtonTouched & vr::ButtonMaskFromId(buttonId)) != 0; }
 
 	//Trigger
 	void UpdateHairTrigger();
@@ -68,32 +31,21 @@ public:
 
 	//mostly for touchpad
 	Vector2 GetAxis(vr::EVRButtonId buttonId = vr::k_EButton_SteamVR_Touchpad);
+	void TriggerHapticPulse(u_int duration_micro_sec = 500, vr::EVRButtonId buttonId = vr::k_EButton_SteamVR_Touchpad);
 
-	//Getters and Setters
-	inline void SetIndex(uint index) { index_ = index; };
-	inline uint GetIndex() { return index_; };
-	inline void SetValid(bool valid) { valid_ = valid; };
-	inline bool GetValid() { return valid_; };
-	void TriggerHapticPulse(uint duration_micro_sec = 500, vr::EVRButtonId buttonId = vr::k_EButton_SteamVR_Touchpad);
+	//translating tracking to in game
+	void UpdateHandPosition(Device* hmd);
+
+	Vector3 body_pos, offset, in_game_pos;
 
 private:
-	float Max(float a, float b) { return a < b; };
-
-	vr::IVRSystem* hmd_;
-	uint index_;
-	bool valid_, connected_, has_tracking_, out_of_range_, callibrating_, uninitalized_;
-	vr::VRControllerState_t state_, prev_state_;
-	vr::TrackedDevicePose_t pose_;
-	int prev_framecount_;
-	int* framecount_;
-
-	vr::ETrackingUniverseOrigin tracking_space_ = vr::TrackingUniverseStanding;
+	
 
 	float hair_trigger_delta_;
-	float hair_trigger_limit_;
+	float hair_trigger_limit_; //trigger dead zone
 	bool hair_trigger_state_, hair_trigger_prev_state_;
 
-
+	TESObjectREFR *hand_object_;  //reference to object currently held / will be a glove if nothing is held
+	
 };
-
 
